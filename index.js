@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -15,12 +15,34 @@ app.use(express.json());
 // 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.cje0k.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-client.connect(err => {
-  const collection = client.db("test").collection("devices");
-  console.log('Fruits Warehouse DB Connected');
-  // perform actions on the collection object
-  client.close();
-});
+
+async function run() {
+    try {
+        await client.connect();
+        const fruitsCollection = client.db('fruitsWarehouse').collection('fruit');
+
+        app.get('/fruit', async (req, res) => {
+            const query = {};
+            const cursor = fruitsCollection.find(query);
+            const fruits = await cursor.toArray();
+            res.send(fruits);
+        });
+
+        app.get('/fruit/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const fruit = await fruitsCollection.findOne(query);
+            res.send(fruit);
+        });
+
+    }
+    finally {
+
+    }
+
+}
+
+run().catch(console.dir);
 
 
 // 
