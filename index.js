@@ -9,8 +9,6 @@ require('dotenv').config();
 app.use(cors());
 app.use(express.json());
 
-// Username= dbuser
-// password= gYKkyJDGQNJqA3U7
 
 // 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.cje0k.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
@@ -33,6 +31,12 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const fruit = await fruitsCollection.findOne(query);
             res.send(fruit);
+        });
+
+        app.post('/fruit', async (req, res) => {
+            const newFruit = req.body;
+            const result = await fruitsCollection.insertOne(newFruit);
+            res.send(result);
         });
 
     }
