@@ -2,8 +2,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const app = express();
 const cors = require('cors');
-const port = process.env.PORT || 5000;
 require('dotenv').config();
+const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
@@ -18,6 +18,7 @@ async function run() {
     try {
         await client.connect();
         const fruitsCollection = client.db('fruitsWarehouse').collection('fruit');
+        const usersCollection = client.db('fruitsWarehouse').collection('user');
 
         app.get('/fruit', async (req, res) => {
             const query = {};
@@ -33,11 +34,12 @@ async function run() {
             res.send(fruit);
         });
 
-        app.post('/fruit', async (req, res) => {
-            const newFruit = req.body;
-            const result = await fruitsCollection.insertOne(newFruit);
-            res.send(result);
-        });
+        /*  // Clicking on the Ad Item button will add one product managed item to the route and save it to the database.
+         app.post('/fruit', async (req, res) => {
+             const newFruit = req.body;
+             const result = await fruitsCollection.insertOne(newFruit);
+             res.send(result);
+         }); */
 
         app.delete('/fruit/:id', async (req, res) => {
             const id = req.params.id;
@@ -45,6 +47,25 @@ async function run() {
             const result = await fruitsCollection.deleteOne(query);
             res.send(result);
         });
+
+
+        // users collection API
+
+        app.get('/user', async (req, res) => {
+            const email = req.query.email;
+            // console.log(email);
+            const query = { email: email };
+            const cursor = usersCollection.find(query);
+            const users = await cursor.toArray();
+            res.send(users);
+        });
+
+        app.post('/user', async (req, res) => {
+            const user = req.body;
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        });
+
 
     }
     finally {
