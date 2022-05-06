@@ -2,12 +2,36 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
 app.use(express.json());
+
+// 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' });
+        }
+
+        console.log('decoded', decoded);
+        req.decoded = decoded;
+        next();
+    });
+
+
+};
 
 
 // 
@@ -19,6 +43,19 @@ async function run() {
         await client.connect();
         const fruitsCollection = client.db('fruitsWarehouse').collection('fruit');
         const usersCollection = client.db('fruitsWarehouse').collection('user');
+
+        // Auth
+        app.post('/login', async (req, res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN, {
+                expiresIn: '1d'
+            });
+
+            res.send({ accessToken });
+        });
+
+
+        // fruits collection API
 
         app.get('/fruit', async (req, res) => {
             const query = {};
@@ -51,13 +88,19 @@ async function run() {
 
         // users collection API
 
-        app.get('/user', async (req, res) => {
+        app.get('/user', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            // console.log(email);
-            const query = { email: email };
-            const cursor = usersCollection.find(query);
-            const users = await cursor.toArray();
-            res.send(users);
+
+            if (email === decodedEmail) {
+                const query = { email: email };
+                const cursor = usersCollection.find(query);
+                const users = await cursor.toArray();
+                res.send(users);
+            } else {
+                res.status(403).send({ message: 'Forbidden access' });
+            }
+
         });
 
         app.post('/user', async (req, res) => {
@@ -85,4 +128,4 @@ app.get('/', (req, res) => {
 // 
 app.listen(port, () => {
     console.log('Running my-assignment-11-server', port);
-})
+});
